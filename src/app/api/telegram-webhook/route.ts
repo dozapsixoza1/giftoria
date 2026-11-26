@@ -167,7 +167,12 @@ async function handleMessage(message: TelegramMessage) {
 
   if (!isAdmin) return;
 
-  if (command === "/ping") {\n    await send(chatId, "🏓 GIFTORIA bot работает.");\n    return;\n  }\n\n  if (command === "/stats") {
+  if (command === "/ping") {
+    await send(chatId, "🏓 GIFTORIA bot работает.");
+    return;
+  }
+
+  if (command === "/stats") {
     if (!supabase) return void await send(chatId, "Supabase не настроен.");
     const { count: total, error: totalError } = await supabase.from("bot_users").select("*", { count: "exact", head: true });
     const { count: muted } = await supabase.from("bot_users").select("*", { count: "exact", head: true }).eq("is_muted", true);
