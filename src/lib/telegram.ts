@@ -16,7 +16,7 @@ export function verifyTelegramInitData(initData: string, botToken: string): Tele
   // remain in this check string; it is excluded in the separate Ed25519 flow.
   params.delete("hash");
   const dataCheckString = [...params.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([key, value]) => `${key}=${value}`)
     .join("\n");
 
