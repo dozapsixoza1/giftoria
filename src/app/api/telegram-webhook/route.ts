@@ -113,7 +113,6 @@ async function handleMessage(message: TelegramMessage) {
       username: from.username ?? null,
       first_name: from.first_name ?? "Пользователь",
       last_name: from.last_name ?? null,
-      is_muted: false,
       last_seen_at: new Date().toISOString(),
     }, { onConflict: "chat_id", ignoreDuplicates: false });
     if (error) console.error("[giftoria-bot] user upsert failed:", error.message);
