@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
   if (!token) return NextResponse.json({ error: "Telegram bot is not configured" }, { status: 503 });
 
   const body = await request.json().catch(() => ({}));
