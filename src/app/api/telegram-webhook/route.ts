@@ -141,6 +141,18 @@ async function handleMessage(message: TelegramMessage) {
     return;
   }
 
+  if (command === "/stop" || command === "/subscribe") {
+    if (!supabase) return void await send(chatId, "Сейчас не удалось обновить настройки. Попробуй позже.");
+    const { error } = await supabase.from("bot_users")
+      .update({ is_muted: command === "/stop" })
+      .eq("telegram_id", from.id);
+    if (error) return void await send(chatId, "Не удалось обновить настройки рассылки.");
+    await send(chatId, command === "/stop"
+      ? "🔕 Рассылки отключены. Чтобы снова получать новости, напиши /subscribe."
+      : "🔔 Рассылки снова включены.");
+    return;
+  }
+
   if (command === "/id") {
     await send(chatId, `Твой Telegram ID: ${from.id}`);
     return;
@@ -155,7 +167,7 @@ async function handleMessage(message: TelegramMessage) {
 
   if (!isAdmin) return;
 
-  if (command === "/stats") {
+  if (command === "/ping") {\n    await send(chatId, "🏓 GIFTORIA bot работает.");\n    return;\n  }\n\n  if (command === "/stats") {
     if (!supabase) return void await send(chatId, "Supabase не настроен.");
     const { count: total, error: totalError } = await supabase.from("bot_users").select("*", { count: "exact", head: true });
     const { count: muted } = await supabase.from("bot_users").select("*", { count: "exact", head: true }).eq("is_muted", true);
