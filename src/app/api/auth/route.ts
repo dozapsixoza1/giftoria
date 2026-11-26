@@ -9,8 +9,27 @@ export async function POST(request: Request) {
   if (!token) return NextResponse.json({ error: "Telegram bot is not configured" }, { status: 503 });
 
   const body = await request.json().catch(() => ({}));
-  const user = verifyTelegramInitData(String(body.initData || ""), token);
-  if (!user) return NextResponse.json({ error: "Invalid or expired Telegram session" }, { status: 401 });
+  const initData = String(body.initData || "");
+  const params = new URLSearchParams(initData);
+  const authDate = Number(params.get("auth_date"));
+  const diagnostic = {
+    initDataPresent: initData.length > 0,
+    initDataLength: initData.length,
+    fields: [...params.keys()].sort(),
+    hasHash: !!params.get("hash"),
+    hashLength: params.get("hash")?.length ?? 0,
+    hasUser: !!params.get("user"),
+    hasAuthDate: Number.isFinite(authDate) && authDate > 0,
+    authDateAgeSeconds: Number.isFinite(authDate) && authDate > 0
+      ? Math.round(Date.now() / 1000 - authDate)
+      : null,
+  };
+
+  const user = verifyTelegramInitData(initData, token);
+  if (!user) {
+    console.warn("[telegram-auth] initData rejected", diagnostic);
+    return NextResponse.json({ error: "Invalid or expired Telegram session" }, { status: 401 });
+  }
 
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ user, persistence: "not_configured" });
