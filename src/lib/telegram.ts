@@ -8,15 +8,24 @@ export function verifyTelegramInitData(initData: string, botToken: string): Tele
   const hash = params.get("hash");
   const authDate = Number(params.get("auth_date"));
   if (!hash || !Number.isFinite(authDate)) return null;
-  if (Math.abs(Date.now() / 1000 - authDate) > 60 * 60 * 24) return null;
+
+  const age = Date.now() / 1000 - authDate;
+  if (age > 60 * 60 * 24 || age < -60 * 5) return null;
+
+  // Bot-token HMAC validation excludes hash only. The signature field must
+  // remain in this check string; it is excluded in the separate Ed25519 flow.
   params.delete("hash");
-  params.delete("signature");
-  const dataCheckString = [...params.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${v}`).join("\n");
-  const secret = createHmac("sha256", "WebAppData").update(botToken).digest();
-  const calculated = createHmac("sha256", secret).update(dataCheckString).digest();
+  const dataCheckString = [...params.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n");
+
+  const secretKey = createHmac("sha256", "WebAppData").update(botToken).digest();
+  const calculated = createHmac("sha256", secretKey).update(dataCheckString).digest();
   let supplied: Buffer;
   try { supplied = Buffer.from(hash, "hex"); } catch { return null; }
   if (supplied.length !== calculated.length || !timingSafeEqual(supplied, calculated)) return null;
+
   try {
     const user = JSON.parse(params.get("user") || "null") as TelegramUser | null;
     return user && Number.isSafeInteger(user.id) ? user : null;
