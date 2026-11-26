@@ -12,7 +12,7 @@ type Gift = {
   unique_gift_variant_count?: number;
 };
 type SavedGift = { gift_id: string; gift_name: string | null; gift_emoji: string | null; created_at: string };
-type Tab = "home" | "marketplace" | "collection" | "profile";
+type Tab = "home" | "showcase" | "marketplace" | "collection" | "profile";
 declare global {
   interface Window {
     Telegram?: { WebApp?: { initData?: string; ready: () => void; expand: () => void; setHeaderColor?: (color: string) => void; setBackgroundColor?: (color: string) => void; HapticFeedback?: { impactOccurred: (style: string) => void } } };
@@ -33,6 +33,7 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all"|"limited"|"premium">("all");
   const [savingId, setSavingId] = useState("");
+  const [openedShowcase, setOpenedShowcase] = useState<string | null>(null);
 
   useEffect(() => {
     const app = window.Telegram?.WebApp;
@@ -123,6 +124,14 @@ export default function Home() {
   }
 
   const goCatalog = () => setTab("marketplace");
+  const showcaseItems = useMemo(() => {
+    const presets = [
+      { id: "neon", name: "NEON VAULT", subtitle: "Electric colors · curated preview", icon: "💎", tone: "violet", picks: gifts.slice(0, 3) },
+      { id: "royal", name: "ROYAL ARCHIVE", subtitle: "Premium selection · curated preview", icon: "👑", tone: "gold", picks: gifts.filter(g => g.is_premium).slice(0, 3) },
+      { id: "limited", name: "LIMITED EDITION", subtitle: "Limited supply · curated preview", icon: "🌟", tone: "pink", picks: gifts.filter(g => typeof g.total_count === "number").slice(0, 3) },
+    ];
+    return presets;
+  }, [gifts]);
 
   return <main className="app-shell">
     <div className="ambient ambient-one"/><div className="ambient ambient-two"/>
@@ -142,6 +151,13 @@ export default function Home() {
         {loading?<div className="skeleton-grid">{[1,2,3].map(n=><div className="skeleton-card" key={n}/>)}</div>:gifts.length?<div className="gift-grid">{gifts.slice(0,3).map(gift=><GiftCard key={gift.id} gift={gift} saved={isSaved(gift.id)} saving={savingId===gift.id} onSave={()=>toggleSaved(gift)}/>)}</div>:<CatalogEmpty configured={configured} error={catalogError}/>}
       </section>
     </>}
+
+    {tab==="showcase" && <section className="section-block showcase-page">
+      <div className="page-intro"><span className="kicker">CURATED GIFT EXPERIENCES</span><h1>Gift <em>showcases.</em></h1><p>Explore themed collections built from real entries in the live Telegram catalog.</p></div>
+      <div className="showcase-disclaimer">✦ Curated previews only — opening a showcase reveals its listed catalog picks. No paid random drops, bets, or NFT ownership is involved.</div>
+      <div className="showcase-grid">{showcaseItems.map((item,index)=><article className={"showcase-card "+item.tone} key={item.id} style={{animationDelay:(index*90)+"ms"}}><div className="showcase-sparkle">✦</div><div className="showcase-art"><span>{item.icon}</span><i/><i/><i/></div><div className="showcase-meta"><span>GIFTORIA / 0{index+1}</span><span>{item.picks.length} PICKS</span></div><h2>{item.name}</h2><p>{item.subtitle}</p><button className="showcase-open" onClick={()=>setOpenedShowcase(item.id)}>Explore showcase <b>↗</b></button></article>)}</div>
+      {openedShowcase && <div className="showcase-modal-backdrop" onClick={()=>setOpenedShowcase(null)}><section className="showcase-modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={()=>setOpenedShowcase(null)}>×</button><span className="kicker">CURATED CATALOG PREVIEW</span><h2>{showcaseItems.find(item=>item.id===openedShowcase)?.name}</h2><p>These are catalog entries to explore and bookmark. Nothing is randomly awarded or transferred.</p>{(showcaseItems.find(item=>item.id===openedShowcase)?.picks||[]).length ? <div className="modal-gifts">{(showcaseItems.find(item=>item.id===openedShowcase)?.picks||[]).map(gift=><GiftCard key={gift.id} gift={gift} saved={isSaved(gift.id)} saving={savingId===gift.id} onSave={()=>toggleSaved(gift)}/>)}</div> : <div className="empty-state compact-empty"><span className="empty-symbol">✧</span><h3>Waiting for catalog entries</h3><p>Telegram has not returned gifts for this theme yet. Try another showcase or check back later.</p></div>}<button className="primary-button modal-done" onClick={()=>setOpenedShowcase(null)}>Done</button></section></div>}
+    </section>}
 
     {tab==="marketplace" && <section className="section-block catalog-page">
       <div className="page-intro"><span className="kicker">THE OFFICIAL TELEGRAM FEED</span><h1>Gift <em>catalog.</em></h1><p>Real gift entries returned by Telegram — no invented items or fake NFT claims.</p></div>
@@ -164,7 +180,7 @@ export default function Home() {
     </section>}
 
     {authError&&tab!=="profile"&&<div className="toast-error">{authError}</div>}
-    <nav className="bottom-nav">{([["home","⌂","Home"],["marketplace","✧","Explore"],["collection","◇","Collection"],["profile","◉","Profile"]] as [Tab,string,string][]).map(([key,icon,label])=><button key={key} className={tab===key?"active":""} onClick={()=>setTab(key)}><span>{icon}</span>{label}</button>)}</nav>
+    <nav className="bottom-nav">{([["home","⌂","Home"],["showcase","✧","Showcase"],["marketplace","▦","Catalog"],["collection","◇","Collection"],["profile","◉","Profile"]] as [Tab,string,string][]).map(([key,icon,label])=><button key={key} className={tab===key?"active":""} onClick={()=>setTab(key)}><span>{icon}</span>{label}</button>)}</nav>
     <footer className="app-footer"><span>GIFTORIA © 2026</span><span>MADE FOR TELEGRAM <b>✦</b></span></footer>
   </main>;
 }
