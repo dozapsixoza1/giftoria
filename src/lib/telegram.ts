@@ -20,7 +20,7 @@ export function verifyTelegramInitData(initData: string, botToken: string): Tele
     .map(([key, value]) => `${key}=${value}`)
     .join("\n");
 
-  const secretKey = createHmac("sha256", botToken).update("WebAppData").digest();
+  const secretKey = createHmac("sha256", "WebAppData").update(botToken).digest();
   const calculated = createHmac("sha256", secretKey).update(dataCheckString).digest();
   let supplied: Buffer;
   try { supplied = Buffer.from(hash, "hex"); } catch { return null; }
